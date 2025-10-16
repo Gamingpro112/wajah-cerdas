@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { FaceRecognitionAttendance } from "@/components/FaceRecognitionAttendance";
+import { FaceRegistration } from "@/components/FaceRegistration";
 import { Camera, History, User as UserIcon } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
@@ -27,6 +28,7 @@ const UserDashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [lastAttendance, setLastAttendance] = useState<AttendanceLog | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -75,7 +77,7 @@ const UserDashboard = () => {
   };
 
   const handleMarkAttendance = async () => {
-    // Reload attendance data after successful verification
+    // Reload attendance and profile data after successful verification
     const { data: attendanceData } = await supabase
       .from("attendance_logs")
       .select("*")
@@ -87,6 +89,22 @@ const UserDashboard = () => {
     if (attendanceData) {
       setLastAttendance(attendanceData);
     }
+  };
+
+  const handleRegistrationSuccess = async () => {
+    // Reload profile data
+    if (user) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("name, consent_face_data")
+        .eq("id", user.id)
+        .single();
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+    }
+    setShowRegistration(false);
   };
 
   if (loading) {
@@ -187,20 +205,31 @@ const UserDashboard = () => {
             </Card>
           </div>
 
-          {/* Instructions Card */}
+          {/* Face Registration Card */}
           {!profile?.consent_face_data && (
             <Card className="shadow-card border-accent">
               <CardHeader>
                 <CardTitle>Daftarkan Wajah Anda</CardTitle>
                 <CardDescription>
-                  Untuk menggunakan fitur absensi, Anda perlu mendaftarkan wajah terlebih dahulu
+                  Untuk menggunakan fitur absensi wajah, Anda perlu mendaftarkan wajah terlebih dahulu
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="gap-2">
-                  <Camera className="w-4 h-4" />
-                  Mulai Pendaftaran
-                </Button>
+                {showRegistration ? (
+                  <FaceRegistration
+                    userId={user!.id}
+                    userName={profile!.name}
+                    onSuccess={handleRegistrationSuccess}
+                  />
+                ) : (
+                  <Button 
+                    onClick={() => setShowRegistration(true)}
+                    className="gap-2"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Mulai Pendaftaran Wajah
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
