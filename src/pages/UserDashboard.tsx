@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { FaceRecognitionAttendance } from "@/components/FaceRecognitionAttendance";
 import { Camera, History, User as UserIcon } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
@@ -73,9 +74,19 @@ const UserDashboard = () => {
     }
   };
 
-  const handleMarkAttendance = () => {
-    toast.info("Fitur pengenalan wajah akan segera hadir!");
-    // This will be implemented with face recognition
+  const handleMarkAttendance = async () => {
+    // Reload attendance data after successful verification
+    const { data: attendanceData } = await supabase
+      .from("attendance_logs")
+      .select("*")
+      .eq("user_id", user?.id)
+      .order("timestamp", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (attendanceData) {
+      setLastAttendance(attendanceData);
+    }
   };
 
   if (loading) {
@@ -103,14 +114,22 @@ const UserDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                size="lg"
-                onClick={handleMarkAttendance}
-                className="w-full sm:w-auto gap-2 shadow-elegant hover:shadow-glow transition-all"
-              >
-                <Camera className="w-5 h-5" />
-                Absen Sekarang
-              </Button>
+              {profile?.consent_face_data ? (
+                <FaceRecognitionAttendance
+                  userId={user!.id}
+                  userName={profile.name}
+                  onSuccess={handleMarkAttendance}
+                />
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={handleMarkAttendance}
+                  className="w-full sm:w-auto gap-2 shadow-elegant hover:shadow-glow transition-all"
+                >
+                  <Camera className="w-5 h-5" />
+                  Absen Sekarang
+                </Button>
+              )}
             </CardContent>
           </Card>
 
