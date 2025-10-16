@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Scan } from "lucide-react";
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().email("Email tidak valid").max(255, "Email terlalu panjang"),
+  password: z.string().min(6, "Password minimal 6 karakter").max(100, "Password terlalu panjang"),
+});
+
+const signupSchema = z.object({
+  name: z.string().trim().min(1, "Nama wajib diisi").max(100, "Nama terlalu panjang"),
+  email: z.string().email("Email tidak valid").max(255, "Email terlalu panjang"),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .max(100, "Password terlalu panjang")
+    .regex(/[A-Z]/, "Password harus mengandung huruf besar")
+    .regex(/[0-9]/, "Password harus mengandung angka"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,9 +40,17 @@ const Auth = () => {
     const password = formData.get("password") as string;
 
     try {
+      // Validate input
+      const validation = loginSchema.safeParse({ email, password });
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
       if (error) throw error;
@@ -60,11 +86,19 @@ const Auth = () => {
     const password = formData.get("password") as string;
 
     try {
+      // Validate input
+      const validation = signupSchema.safeParse({ name, email, password });
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
         options: {
-          data: { name },
+          data: { name: validation.data.name },
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
@@ -76,8 +110,8 @@ const Auth = () => {
       // Auto login after signup
       if (data.user) {
         const { error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: validation.data.email,
+          password: validation.data.password,
         });
         
         if (!loginError) {
