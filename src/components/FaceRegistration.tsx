@@ -38,18 +38,54 @@ export const FaceRegistration = ({ userId, userName, onSuccess }: FaceRegistrati
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 }
-      });
-      
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error("Perangkat tidak mendukung kamera atau izin ditolak.");
+        return;
+      }
+
+      // Prefer front camera with ideal resolution; fallback to any camera
+      const primaryConstraints: MediaStreamConstraints = {
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      };
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(primaryConstraints);
+      } catch (e) {
+        // Fallback for older devices/browsers
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        // iOS/Safari autoplay requirements
+        video.muted = true;
+        
+        video.playsInline = true;
+        video.setAttribute("muted", "");
+        video.setAttribute("playsinline", "");
+
+        video.srcObject = stream;
         streamRef.current = stream;
         setIsCameraActive(true);
+
+        // Ensure playback starts
+        try {
+          await video.play();
+        } catch {
+          video.addEventListener(
+            "loadedmetadata",
+            () => {
+              video.play().catch(() => {});
+            },
+            { once: true }
+          );
+        }
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
-      toast.error("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.");
+      toast.error("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan dan perangkat memiliki kamera.");
     }
   };
 
