@@ -184,14 +184,15 @@ export const FaceRegistration = ({ userId, userName, onSuccess }: FaceRegistrati
         </div>
       )}
 
-      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden min-h-[300px]">
         {isCameraActive ? (
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover mirror"
+            style={{ transform: 'scaleX(-1)' }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

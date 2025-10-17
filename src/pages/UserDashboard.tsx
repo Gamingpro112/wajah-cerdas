@@ -139,14 +139,24 @@ const UserDashboard = () => {
                   onSuccess={handleMarkAttendance}
                 />
               ) : (
-                <Button
-                  size="lg"
-                  onClick={handleMarkAttendance}
-                  className="w-full sm:w-auto gap-2 shadow-elegant hover:shadow-glow transition-all"
-                >
-                  <Camera className="w-5 h-5" />
-                  Absen Sekarang
-                </Button>
+                <div className="space-y-4">
+                  <div className="p-4 bg-accent/10 rounded-lg border border-accent">
+                    <p className="text-sm text-muted-foreground">
+                      Anda belum mendaftarkan wajah. Silakan daftarkan wajah terlebih dahulu untuk menggunakan sistem absensi otomatis.
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    onClick={() => {
+                      const registrationSection = document.getElementById('face-registration');
+                      registrationSection?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="w-full sm:w-auto gap-2 shadow-elegant hover:shadow-glow transition-all"
+                  >
+                    <Camera className="w-5 h-5" />
+                    Daftar Wajah
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -207,7 +217,7 @@ const UserDashboard = () => {
 
           {/* Face Registration Card */}
           {!profile?.consent_face_data && (
-            <Card className="shadow-card border-accent">
+            <Card id="face-registration" className="shadow-card border-accent">
               <CardHeader>
                 <CardTitle>Daftarkan Wajah Anda</CardTitle>
                 <CardDescription>
